@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="css/admin_dashboard.css">
+</head>
+    <body>
+
+<div class="dashboard">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <h2>Admin</h2>
+    <button onclick="toggleProductForm()">➕ Add Product</button>
+    <button onclick="loadOrders()">📦 View Orders</button>
+    <button onclick="logout()">🚪 Logout</button>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+
+    <h1>🛒 Admin Dashboard</h1>
+
+    <!-- PRODUCT FORM -->
+    <div id="product-form" class="card" style="display:none;">
+      <h3>Add Product</h3>
+
+      <input type="text" id="pname" placeholder="Product Name"><br><br>
+      <input type="text" id="pimage" placeholder="Image URL"><br><br>
+      <input type="number" id="pprice" placeholder="Price"><br><br>
+
+      <button onclick="addProduct()">Submit</button>
+    </div>
+
+    <!-- ORDER LIST -->
+    <div id="order-list"></div>
+
+  </div>
+
+</div>
+
+<script src="js/auth_check.js"></script>
+<script src="js/admin_dashboard.js"></script>
+
+</body>
+</html>
