@@ -18,70 +18,60 @@ export default function AdminDashboard() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!localStorage.getItem('token')) {
+    if (!localStorage.getItem('isAdmin')) {
       navigate('/admin')
     }
   }, [])
 
-  const token = localStorage.getItem('token')
+  const API = import.meta.env.VITE_API_URL
+
+  function safeId(id) {
+    const n = parseInt(id)
+    if (isNaN(n) || n <= 0) throw new Error('Invalid ID')
+    return n
+  }
+
   function loadOrders() {
-  setLoading(true)
-  fetch(`${import.meta.env.VITE_API_URL}/orders`, {
-    headers: { Authorization: 'Bearer ' + token }
-  })
-    .then(res => {
-      if (!res.ok) throw new Error("Unauthorized or failed")
-      return res.json()
-    })
-    .then(data => {
-      setOrders(data)
-      setView('orders')
-    })
-    .catch(() => {
-      toast.error("Session expired. Please login again")
-      navigate('/admin')
-    })
-    .finally(() => setLoading(false))
-}
- 
-function loadProducts(){
-  setLoading(true)
-  fetch(`${import.meta.env.VITE_API_URL}/products`)
-    .then(res => {
-      if (!res.ok) throw new Error('API error')
-      return res.json()
-    })
-    .then(data => {
-      setProducts(data)
-      setView('products')
-    })
-    .catch(() => toast.error('Failed to load products'))
-    .finally(() => setLoading(false))
-}
-function handleEdit(product) {
-  setSelectedProduct(product)
-  setIsEditing(true)
+    setLoading(true)
+    fetch(`${API}/orders`)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed')
+        return res.json()
+      })
+      .then(data => { setOrders(data); setView('orders') })
+      .catch(() => { toast.error('Failed to load orders'); navigate('/admin') })
+      .finally(() => setLoading(false))
+  }
 
-  // this help to give existing form re use tht form 
-  setPname(product.name)
-  setPimage(product.imageUrl)
-  setPprice(product.price)
+  function loadProducts() {
+    setLoading(true)
+    fetch(`${API}/products`)
+      .then(res => {
+        if (!res.ok) throw new Error('API error')
+        return res.json()
+      })
+      .then(data => { setProducts(data); setView('products') })
+      .catch(() => toast.error('Failed to load products'))
+      .finally(() => setLoading(false))
+  }
 
-  // open form
-  setShowProductForm(true)
-}
+  function handleEdit(product) {
+    setSelectedProduct(product)
+    setIsEditing(true)
+    setPname(product.name)
+    setPimage(product.imageUrl)
+    setPprice(product.price)
+    setShowProductForm(true)
+  }
 
   function markDelivered(id) {
-    fetch(`${import.meta.env.VITE_API_URL}/orders/${id}/status`, {
-      method: 'PUT',
-      headers: { Authorization: 'Bearer ' + token }
-    })
-      .then(res => res.json())
-      .then(() => {
-        toast.success('Order marked as Delivered!')
-        loadOrders()
-      })
-      .catch(() => toast.error('Failed to update order'))
+    try {
+      const safeOrderId = safeId(id)
+      fetch(`${API}/orders/${safeOrderId}/status`, { method: 'PUT' })
+        .then(res => res.json())
+        .then(() => { toast.success('Order marked as Delivered!'); loadOrders() })
+        .catch(() => toast.error('Failed to update order'))
+    } catch { toast.error('Invalid order ID') }
   }
 
   function addProduct() {
@@ -93,19 +83,22 @@ function handleEdit(product) {
     const productData = { name: pname, imageUrl: pimage, price: pprice }
 
     if (isEditing) {
-      fetch(`${import.meta.env.VITE_API_URL}/products/${selectedProduct.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-        body: JSON.stringify(productData)
-      })
-        .then(res => res.json())
-        .then(() => { toast.success('Product updated successfully!'); resetForm(); loadProducts() })
-        .catch(() => toast.error('Failed to update product'))
-        .finally(() => setLoading(false))
+      try {
+        const safeProductId = safeId(selectedProduct.id)
+        fetch(`${API}/products/${safeProductId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(productData)
+        })
+          .then(res => res.json())
+          .then(() => { toast.success('Product updated successfully!'); resetForm(); loadProducts() })
+          .catch(() => toast.error('Failed to update product'))
+          .finally(() => setLoading(false))
+      } catch { toast.error('Invalid product ID'); setLoading(false) }
     } else {
-      fetch(`${import.meta.env.VITE_API_URL}/products`, {
+      fetch(`${API}/products`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(productData)
       })
         .then(res => res.json())
@@ -114,42 +107,48 @@ function handleEdit(product) {
         .finally(() => setLoading(false))
     }
   }
+
   function resetForm() {
-  setPname('')
-  setPimage('')
-  setPprice('')
-  setSelectedProduct(null)
-  setIsEditing(false)
-  setShowProductForm(false)
-}
-function deleteProduct(id) {
-  if (!window.confirm("Are you sure you want to delete this product?")) return
-  setLoading(true)
-  fetch(`${import.meta.env.VITE_API_URL}/products/${id}`, {
-    method: 'DELETE',
-    headers: { Authorization: 'Bearer ' + token }
-  })
-    .then(() => { toast.success("Product deleted successfully!"); loadProducts() })
-    .catch(() => toast.error("Failed to delete product"))
-    .finally(() => setLoading(false))
-}
+    setPname('')
+    setPimage('')
+    setPprice('')
+    setSelectedProduct(null)
+    setIsEditing(false)
+    setShowProductForm(false)
+  }
+
+  function deleteProduct(id) {
+    if (!window.confirm('Are you sure you want to delete this product?')) return
+    try {
+      const safeProductId = safeId(id)
+      setLoading(true)
+      fetch(`${API}/products/${safeProductId}`, { method: 'DELETE' })
+        .then(() => { toast.success('Product deleted successfully!'); loadProducts() })
+        .catch(() => toast.error('Failed to delete product'))
+        .finally(() => setLoading(false))
+    } catch { toast.error('Invalid product ID') }
+  }
 
   function logout() {
-    localStorage.removeItem('token')
+    localStorage.removeItem('isAdmin')
     navigate('/admin')
   }
-function updateOrderStatus(id, status) {
-  setLoading(true)
-  fetch(`${import.meta.env.VITE_API_URL}/orders/${id}/status`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-    body: JSON.stringify({ status })
-  })
-    .then(res => res.json())
-    .then(() => { toast.success(`Order marked as ${status}`); loadOrders() })
-    .catch(() => toast.error('Failed to update status'))
-    .finally(() => setLoading(false))
-}
+
+  function updateOrderStatus(id, status) {
+    try {
+      const safeOrderId = safeId(id)
+      setLoading(true)
+      fetch(`${API}/orders/${safeOrderId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      })
+        .then(res => res.json())
+        .then(() => { toast.success(`Order marked as ${status}`); loadOrders() })
+        .catch(() => toast.error('Failed to update status'))
+        .finally(() => setLoading(false))
+    } catch { toast.error('Invalid order ID') }
+  }
   return (
     <div className="dashboard">
       <Sidebar

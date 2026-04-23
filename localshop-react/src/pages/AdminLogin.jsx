@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
 
 export default function AdminLogin() {
   const [username, setUsername] = useState('')
@@ -10,22 +9,23 @@ export default function AdminLogin() {
   const navigate = useNavigate()
 
   function login() {
-    fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ username, password })
-})
-  .then(res => res.json())
-  .then(data => {
-   if (data.token) {
-    localStorage.setItem("token", data.token)
-    toast.success("Login successful ✅")
-    setTimeout(() => navigate('/admin/dashboard'), 1000)
-  } else {
-    toast.error("Login failed")
-  }
-  })
-  .catch(() => toast.error('Login failed'))
+    setError('')
+    fetch('http://localhost:8080/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    })
+      .then(res => res.text())
+      .then(data => {
+        console.log('Backend response:', data)
+        if (data.includes('successful') || data.includes('Login')) {
+          localStorage.setItem('isAdmin', 'true')
+          navigate('/admin/dashboard')
+        } else {
+          setError('Invalid username or password')
+        }
+      })
+      .catch(() => setError('Server error. Please try again.'))
   }
  
 

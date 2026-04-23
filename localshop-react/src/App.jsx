@@ -4,7 +4,7 @@ import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
 
 function ProtectedRoute({ children }) {
-  return localStorage.getItem('token')
+  return localStorage.getItem('isAdmin')
     ? children
     : <Navigate to="/admin" replace />
 }
